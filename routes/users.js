@@ -3,6 +3,20 @@ const router = express.Router();
 const verifyToken = require('../middleware/auth');
 const { db, auth } = require('../config/firebase');
 const jwt = require('jsonwebtoken');
+const winston = require('winston');
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(), // Adds timestamp
+    winston.format.printf(({ timestamp, level, message }) => {
+      return `${timestamp} [${level}]: ${message}`;
+    })
+  ),
+  transports: [
+    new winston.transports.Console(),
+    new winston.transports.File({ filename: 'combined.log' })
+  ]
+});
 
 // POST /api/users/register - Basic email/phone registration
 router.post('/register', async (req, res) => {
@@ -11,22 +25,22 @@ router.post('/register', async (req, res) => {
     return res.status(400).json({ error: 'Missing required fields: email, password, phone, username, firstName, lastName, dateOfBirth, address, city, state, zipcode' });
   }
   const { email, password, phone, username, firstName, lastName, dateOfBirth, address, city, state, zipcode } = req.body;
-  console.log('Register Attempt:', { email, password, phone, username, firstName, lastName, dateOfBirth, address, city, state, zipcode });
+  logger.info('Register Attempt:', { email, phone, username, firstName, lastName });
   try {
     const userRecord = await auth.getUserByEmail(email).catch(() => null);
     if (userRecord) {
       await db.collection('users').doc(userRecord.uid).set({ phone, verified: false, username, firstName, lastName, dateOfBirth, address, city, state, zipcode }, { merge: true });
-      console.log('User Updated in Firestore:', userRecord.uid);
+      logger.info('User Updated in Firestore:', userRecord.uid);
       return res.json({ uid: userRecord.uid, message: 'User updated' });
     }
     const user = await auth.createUser({ email, password });
-    console.log('User Created in Auth:', user.uid);
+    logger.info('User Created in Auth:', user.uid);
     const userData = { phone, verified: false, username, firstName, lastName, dateOfBirth, address, city, state, zipcode };
     await db.collection('users').doc(user.uid).set(userData);
-    console.log('User Written to Firestore:', user.uid, userData);
+    logger.info('User Written to Firestore:', user.uid, userData);
     res.json({ uid: user.uid });
   } catch (err) {
-    console.error('Error Details:', err);
+    logger.error('Error Details:', err);
     let errorMessage = 'Authentication Error';
     if (err.code === 'auth/email-already-exists') errorMessage = 'The email address is already in use by another account.';
     else if (err.code === 'auth/invalid-email') errorMessage = 'Invalid email format';
