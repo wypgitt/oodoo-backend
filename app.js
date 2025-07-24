@@ -25,13 +25,20 @@ app.use('/api/users', userRoutes);
 app.use('/api/gigs', gigRoutes);
 app.use('/api/mailbox', mailboxRoutes);
 
+app.use((req, res, next) => {
+  console.log('Request Body:', req.body);  // Debug log
+  next();
+});
+app.use(bodyParser.json());
+app.use('/api/users', userRoutes);
+
 // Socket.io for chat
 chatController(io);
 
 // Health check
 app.get('/', (req, res) => res.send('Oodoo Backend Running'));
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
