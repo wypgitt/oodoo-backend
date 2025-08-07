@@ -1,3 +1,17 @@
 2025-07-24T05:57:27.192Z [info]: Register Attempt:
 2025-07-24T05:57:27.947Z [info]: User Created in Auth:
 2025-07-24T05:57:28.311Z [info]: User Written to Firestore:
+2025-08-07T06:12:05.510Z [info]: Register Attempt:
+2025-08-07T06:12:06.100Z [error]: Error Details: Value for argument "value" is not a valid query constraint. Cannot use "undefined" as a Firestore value. If you want to ignore undefined values, enable `ignoreUndefinedProperties`.
+2025-08-07T06:43:48.023Z [info]: Register Attempt:
+2025-08-07T06:43:48.744Z [error]: Error Details: auth is not defined
+2025-08-07T06:47:05.409Z [info]: Register Attempt:
+2025-08-07T06:47:06.465Z [error]: Error Details: TOO_SHORT
+2025-08-07T06:48:46.700Z [info]: Register Attempt:
+2025-08-07T06:48:47.641Z [info]: User Created in Auth:
+2025-08-07T06:48:47.847Z [info]: User Written to Firestore:
+2025-08-07T06:48:47.848Z [error]: Error Details: The continue URL must be a valid URL string.
+2025-08-07T06:56:06.469Z [info]: Register Attempt:
+2025-08-07T06:56:07.505Z [info]: User Updated in Firestore:
+2025-08-07T07:12:51.310Z [error]: Login Error for testuser@example.com: API key not valid. Please pass a valid API key.
+2025-08-07T07:18:16.762Z [error]: Login Error for testuser@example.com: API key not valid. Please pass a valid API key.
