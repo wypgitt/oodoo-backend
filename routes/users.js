@@ -9,21 +9,8 @@ const verifyToken = require('../middleware/auth');
 const nodemailer = require('nodemailer');  // New: For sending custom emails
 const validate = require('../middleware/validate');  // Assuming from prior step
 const Joi = require('joi');  // For enhanced validation
+const logger = require('../logger');
 
-// Winston logger setup
-const logger = winston.createLogger({
-  level: 'info',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.printf(({ timestamp, level, message }) => {
-      return `${timestamp} [${level}]: ${message}`;
-    })
-  ),
-  transports: [
-    new winston.transports.Console(),
-    new winston.transports.File({ filename: 'combined.log' })
-  ]
-});
 
 // Rate limiter to prevent brute force attacks
 const loginLimiter = rateLimit({

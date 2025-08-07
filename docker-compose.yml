@@ -10,5 +10,11 @@ services:
     env_file:
       - .env
     volumes:
+      - .:/app
+      - /app/node_modules
+      - ./firebase-service-account.json:/app/firebase-service-account.json:ro
       - ./combined.log:/app/combined.log  # Optional: Mount log file if needed for persistence
     restart: unless-stopped
+    command: npm run dev
+    environment:
+      - CHOKIDAR_USEPOLLING=true
