@@ -21,6 +21,7 @@ admin.initializeApp({
 });
 
 const db = admin.firestore();
+db.settings({ ignoreUndefinedProperties: true });  // Prevent undefined value errors
 const auth = admin.auth();
 
 module.exports = { db, auth };

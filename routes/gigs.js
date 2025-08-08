@@ -16,12 +16,25 @@ router.post('/gigs', verifyToken, async (req, res) => {
     title: Joi.string().min(5).max(100).required(),
     description: Joi.string().min(10).required(),
     price: Joi.number().positive().required(),
-    // Add other fields as needed, e.g., location: Joi.string().optional()
+    category: Joi.string().optional(), // e.g., "plumbing", "delivery"
+    deadline: Joi.date().optional(), // ISO date string for urgency
+    estimatedDuration: Joi.number().positive().optional(), // In hours
+    attachments: Joi.array().items(Joi.string().uri()).optional(), // URLs to images/docs
+    location: Joi.object({ // Optional exact location object
+      latitude: Joi.number().min(-90).max(90).required(),
+      longitude: Joi.number().min(-180).max(180).required()
+    }).optional()
   });
 
   const { error } = schema.validate(req.body);
   if (error) {
     return res.status(400).json({ error: error.details[0].message });
+  }
+
+  console.log('req.userId in route:', req.userId); // Debug: Remove in production if not needed
+  if (!req.userId) {
+    logger.error('User ID undefined in gig creation');
+    return res.status(403).json({ error: 'Unauthorized: User ID not found' });
   }
 
   const gigData = {
@@ -31,11 +44,24 @@ router.post('/gigs', verifyToken, async (req, res) => {
     status: 'open',
   };
 
+  // Handle location: Store exact and compute approximate for privacy
+  if (req.body.location) {
+    const { latitude, longitude } = req.body.location;
+    gigData.exactLocation = new admin.firestore.GeoPoint(latitude, longitude);
+    // Simple blur for approximate: Round to 1 decimal place (~11km accuracy; adjust as needed)
+    const approxLat = Math.round(latitude * 10) / 10;
+    const approxLong = Math.round(longitude * 10) / 10;
+    gigData.approximateLocation = new admin.firestore.GeoPoint(approxLat, approxLong);
+    // Remove original 'location' from gigData to avoid duplication
+    delete gigData.location;
+  }
+
   try {
     const gigRef = await db.collection('gigs').add(gigData);
     res.status(201).json({ id: gigRef.id, ...gigData });
   } catch (error) {
-    logger.error('Error creating gig:', { error: error.message, userId: req.userId });
+    logger.error('Error creating gig:', error); // Log full error
+    console.error('Full error stack:', error.stack); // Temporary debug
     res.status(500).json({ error: 'Failed to create gig. Please try again.' });
   }
 });
@@ -117,28 +143,63 @@ router.post('/gigs/:id/accept', verifyToken, async (req, res) => {
   const { id } = req.params;
 
   try {
-    const gigRef = db.collection('gigs').doc(id);
-    const gigDoc = await gigRef.get();
-    if (!gigDoc.exists) {
-      return res.status(404).json({ error: 'Gig not found' });
-    }
+    await db.runTransaction(async (transaction) => {
+      const gigRef = db.collection('gigs').doc(id);
+      const gigDoc = await transaction.get(gigRef);
+      if (!gigDoc.exists) {
+        throw new Error('Gig not found');
+      }
 
-    const gigData = gigDoc.data();
-    if (gigData.userId === req.userId) {
-      return res.status(403).json({ error: 'Cannot accept your own gig' });
-    }
-    if (gigData.status !== 'open') {
-      return res.status(400).json({ error: 'Gig is not open for acceptance' });
-    }
+      const gigData = gigDoc.data();
+      if (gigData.userId === req.userId) {
+        throw new Error('Cannot accept your own gig');
+      }
+      if (gigData.status !== 'open') {
+        throw new Error('Gig is not open for acceptance');
+      }
 
-    await gigRef.update({
-      acceptedBy: req.userId,
-      status: 'accepted',
-      acceptedAt: admin.firestore.FieldValue.serverTimestamp()
+      // Prepare gig update
+      const gigUpdate = {
+        acceptedBy: req.userId,
+        status: 'accepted',
+        acceptedAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+      transaction.update(gigRef, gigUpdate);
+
+      // Create assignment mapping in subcollection (no history array)
+      const assignmentRef = gigRef.collection('assignments').doc(req.userId); // Doc ID as userId
+      const assignmentData = {
+        gigId: id,
+        userId: req.userId,
+        currentStatus: 'accepted',
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+      transaction.set(assignmentRef, assignmentData);
+
+      // Add initial status history as a subcollection document
+      const historyRef = assignmentRef.collection('history').doc(); // Auto-generated ID
+      const historyData = {
+        status: 'accepted',
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        changedBy: req.userId
+      };
+      transaction.set(historyRef, historyData);
     });
+
     res.json({ success: true, message: 'Gig accepted' });
   } catch (error) {
-    logger.error('Error accepting gig:', { error: error.message, gigId: id, userId: req.userId });
+    logger.error('Error accepting gig:', error);  // Full error
+    console.error('Full error details:', JSON.stringify(error, null, 2));
+    console.error('Error stack:', error.stack);
+    // Custom responses for known errors
+    if (error.message === 'Gig not found') {
+      return res.status(404).json({ error: error.message });
+    } else if (error.message === 'Cannot accept your own gig') {
+      return res.status(403).json({ error: error.message });
+    } else if (error.message === 'Gig is not open for acceptance') {
+      return res.status(400).json({ error: error.message });
+    }
     res.status(500).json({ error: 'Failed to accept gig. Please try again.' });
   }
 });

@@ -183,13 +183,11 @@ router.post('/register', validate(registerSchema), async (req, res) => {
 // POST /api/users/login - User login endpoint
 router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
-
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password required' });
   }
-
   try {
-    // Firebase Identity Toolkit REST API
+    // Firebase Identity Toolkit REST API for sign-in
     const response = await axios.post(
       `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${process.env.FIREBASE_API_KEY}`,
       {
@@ -198,7 +196,6 @@ router.post('/login', loginLimiter, async (req, res) => {
         returnSecureToken: true
       }
     );
-
     const { idToken, localId: userId } = response.data;
 
     // Fetch user profile from Firestore
@@ -206,24 +203,24 @@ router.post('/login', loginLimiter, async (req, res) => {
     if (!userDoc.exists) {
       return res.status(401).json({ error: 'User not found in Firestore' });
     }
-
     const userData = userDoc.data();
 
-    // Create custom JWT payload
+    // Create JWT payload (use userId consistently)
     const tokenPayload = {
-      uid: userId,
+      userId: userId,  // Use the Firebase UID here (was localId)
       email: userData.email || email,
-      role: userData.role || 'user'
+      role: userData.role || 'user'  // Pull from Firestore if available
     };
 
+    // Sign the token
     const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, { expiresIn: '12h' });
 
-    // Option 1: Return token in response body
+    // Return response
     res.status(200).json({
       message: 'Login successful',
       token,
       user: {
-        uid: userId,
+        uid: userId,  // For compatibility if frontend expects 'uid'
         email: tokenPayload.email,
         name: userData.name || '',
         role: tokenPayload.role

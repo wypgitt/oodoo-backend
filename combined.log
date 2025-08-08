@@ -15,3 +15,16 @@
 2025-08-07T06:56:07.505Z [info]: User Updated in Firestore:
 2025-08-07T07:12:51.310Z [error]: Login Error for testuser@example.com: API key not valid. Please pass a valid API key.
 2025-08-07T07:18:16.762Z [error]: Login Error for testuser@example.com: API key not valid. Please pass a valid API key.
+2025-08-08T18:10:41.990Z [error]: Error creating gig:
+2025-08-08T18:18:31.845Z [error]: Error creating gig: Value for argument "data" is not a valid Firestore document. Cannot use "undefined" as a Firestore value (found in field "userId"). If you want to ignore undefined values, enable `ignoreUndefinedProperties`.
+2025-08-08T19:02:19.599Z [error]: Login Error for testuser@example.com: userRecord is not defined
+2025-08-08T19:20:21.777Z [info]: Register Attempt:
+2025-08-08T19:20:31.241Z [info]: Register Attempt:
+2025-08-08T19:20:43.740Z [info]: Register Attempt:
+2025-08-08T19:20:44.772Z [info]: User Created in Auth:
+2025-08-08T19:20:44.908Z [info]: User Written to Firestore:
+2025-08-08T19:20:45.208Z [error]: Error Details: connect ECONNREFUSED 127.0.0.1:587
+2025-08-08T19:22:03.810Z [info]: Register Attempt:
+2025-08-08T19:22:04.537Z [info]: User Updated in Firestore:
+2025-08-08T19:33:16.702Z [error]: Error accepting gig:
+2025-08-08T19:40:01.758Z [error]: Error accepting gig: Value for argument "data" is not a valid Firestore document. FieldValue.serverTimestamp() cannot be used inside of an array (found in field "statusHistory.`0`.timestamp").
