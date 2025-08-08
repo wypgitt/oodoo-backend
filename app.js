@@ -10,6 +10,7 @@ const userRoutes = require('./routes/users');
 const gigRoutes = require('./routes/gigs');
 const mailboxRoutes = require('./routes/mailbox');
 const chatController = require('./controllers/chatController');
+const homeRoutes = require('./routes/homes');
 
 const app = express();
 const server = http.createServer(app);
@@ -24,6 +25,7 @@ app.use(bodyParser.json());
 app.use('/api/users', userRoutes);
 app.use('/api/gigs', gigRoutes);
 app.use('/api/mailbox', mailboxRoutes);
+app.use('/api/homes', homeRoutes);
 
 app.use((req, res, next) => {
   console.log('Request Body:', req.body);  // Debug log
